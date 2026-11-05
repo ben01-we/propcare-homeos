@@ -1,0 +1,266 @@
+<!doctype html>
+<!--
+  Direction: work-wear. PropCare navy #1A2744 with hi-vis #F2C230 for the one main action, on a
+  warm off-white page (homeowners and landlords reading on a phone at home, in daylight).
+  Type: Archivo variable (self-hosted), wide cut for headings, normal width for body. Radius 12px.
+  The product leads as live HTML phone screens; no stock photos, no invented figures.
+-->
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PropCare HomeOS: repairs and safety checks for your home</title>
+  <meta name="description" content="Photo-check a repair in seconds, keep gas, electrical and EPC checks on track, and send the job to PropCare by WhatsApp. Free Android app that works offline.">
+  <meta name="theme-color" content="#1A2744">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <div class="wrap top-row">
+      <a class="brand" href="#" aria-label="PropCare HomeOS home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>PropCare <b>HomeOS</b></span>
+      </a>
+      <nav class="top-nav" aria-label="Sections">
+        <a href="#try">Photo check</a>
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#safety">Privacy</a>
+      </nav>
+      <a class="btn btn-main btn-small" href="downloads/PropCare-HomeOS.apk" data-apk>Get the app</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <h1>The repair and safety-check app for homes and rentals in the North West</h1>
+          <p class="lede">Photograph the problem and get a first look in seconds. Keep gas, electrical and EPC checks on track. Send the job to PropCare by WhatsApp, with the photo.</p>
+          <p class="fact">Free Android app. Works offline. No account to create.</p>
+          <div class="actions">
+            <a class="btn btn-main" href="downloads/PropCare-HomeOS.apk" data-apk>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+              Download the Android app
+            </a>
+            <a class="btn btn-quiet" href="#try">Try the photo check</a>
+          </div>
+          <p class="small">Android 11 or later. Concept app built for Prop Care (NW) LTD by A Benjamin Gabrial.</p>
+        </div>
+
+        <div class="phone" aria-label="The app's home screen">
+          <div class="screen">
+            <div class="s-bar"><span>Hello, Sam</span></div>
+            <div class="s-alert">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+              <div><b>Gas smell, sparks or flooding?</b><span>Open emergency help</span></div>
+            </div>
+            <div class="s-card s-health">
+              <div class="ring"><span>70</span><small>of 100</small></div>
+              <div>
+                <b>Sample rental</b>
+                <span class="muted">A few things to sort</span>
+                <span class="tip">• Book the overdue electrical safety report (+20)</span>
+                <span class="tip">• Book the gas safety check due in 15 days (+5)</span>
+              </div>
+            </div>
+            <p class="s-title">Open jobs</p>
+            <div class="s-card s-job">
+              <div class="row"><b class="ref">PC-1002</b><span class="muted">5 Nov</span></div>
+              <b>Mould on bathroom ceiling</b>
+              <div class="row gap"><span class="pill">Requested</span><span class="pill">Routine</span></div>
+            </div>
+            <div class="s-card s-job">
+              <div class="row"><b class="ref">PC-1001</b><span class="muted">3 Nov</span></div>
+              <b>Dripping kitchen tap</b>
+              <div class="row gap"><span class="pill pill-y">Quote sent</span><span class="pill">Routine</span></div>
+            </div>
+            <div class="s-fab">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-3.2-5c0 1.77 1.43 3.2 3.2 3.2s3.2-1.43 3.2-3.2-1.43-3.2-3.2-3.2-3.2 1.43-3.2 3.2z"/></svg>
+              Report issue
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="try" id="try" aria-labelledby="try-h">
+      <div class="wrap try-grid">
+        <div>
+          <h2 id="try-h">Check a photo of your repair now</h2>
+          <p>Upload a photo of a leak, crack, damp patch or faulty socket. The check names the likely problem, the trade you need and how urgent it is, and outlines the area on your photo.</p>
+          <p class="small">Your photo goes to Google Gemini through PropCare's server to be checked. It is not stored. Gas smells, sparks and water near electrics are always treated as emergencies, whatever the AI says.</p>
+
+          <form class="check" id="check-form" novalidate>
+            <label class="file" for="photo">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+              <span id="file-label">Choose a photo</span>
+            </label>
+            <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="visually-hidden">
+            <label for="desc" class="field-label">What is wrong? <span class="muted">(optional)</span></label>
+            <textarea id="desc" name="desc" rows="3" maxlength="500" placeholder="For example: brown stain on the kitchen ceiling, getting bigger"></textarea>
+            <p class="field-error" id="form-error" role="alert" hidden></p>
+            <button class="btn btn-main" type="submit" id="check-btn">Check photo</button>
+          </form>
+        </div>
+
+        <div class="result" id="result" aria-live="polite">
+          <div class="result-empty" id="result-empty">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+            <p><b>Your result appears here</b></p>
+            <p class="muted">The problem, the trade, how urgent it is, what you can do now and what a photo cannot show.</p>
+          </div>
+          <div class="result-card" id="result-card" hidden>
+            <div class="photo-frame" id="photo-frame">
+              <img id="result-img" alt="Your photo">
+              <div class="box" id="result-box" hidden></div>
+            </div>
+            <div class="result-body">
+              <span class="pill pill-navy">AI first look, a technician confirms</span>
+              <div class="emergency" id="r-emergency" hidden>
+                <b>This could be dangerous.</b> If you smell gas, leave and call 0800 111 999. For other emergencies call PropCare on 07938 849865.
+              </div>
+              <h3 id="r-summary"></h3>
+              <div class="row gap wrap-row"><span class="pill" id="r-urgency"></span><span class="pill" id="r-trade"></span></div>
+              <div id="r-lists"></div>
+              <p class="price" id="r-price"></p>
+              <p class="small">Example price band. PropCare confirms the price after seeing the job.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features" aria-labelledby="features-h">
+      <div class="wrap">
+        <h2 id="features-h">Everything a home needs between repairs, on your phone</h2>
+        <div class="feature-cols">
+          <div>
+            <h3>When something breaks</h3>
+            <ul class="ticks">
+              <li><b>Photo check with the problem outlined.</b> Likely causes, the right trade and how urgent it is.</li>
+              <li><b>Speak instead of typing</b> in English, Hindi or Tamil.</li>
+              <li><b>Emergency mode.</b> One tap to the gas emergency line or PropCare, with safe steps for gas, CO, electrics and floods.</li>
+              <li><b>Send to PropCare by WhatsApp or email</b> as a job sheet with your photo, and follow it from Requested to Done.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>For landlords</h3>
+            <ul class="ticks">
+              <li><b>Gas safety, EICR, EPC and alarm checks</b> for each rental, marked OK, due soon or overdue.</li>
+              <li><b>Reminders</b> 30 days before a check is due, and when it is overdue.</li>
+              <li><b>Home Health Score</b> out of 100, with the jobs that win points back.</li>
+              <li><b>Maintenance passport PDF</b> with checks, repairs and photos, for tenants, buyers or agents.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>For PropCare's team</h3>
+            <ul class="ticks">
+              <li><b>Staff job board</b> behind a PIN, most urgent first.</li>
+              <li><b>Quotes, visit times and messages</b> that show on the customer's timeline.</li>
+              <li><b>Home-screen widget</b> with open jobs and the next check due.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="how" id="how" aria-labelledby="how-h">
+      <div class="wrap">
+        <h2 id="how-h">From photo to booked repair in three steps</h2>
+        <ol class="steps">
+          <li><b>Take a photo</b><span>Add a few words, or say them. Choose which property it is.</span></li>
+          <li><b>Get a first look</b><span>The likely problem, the trade and the urgency, with an example price band. Safety rules always win.</span></li>
+          <li><b>Send it to PropCare</b><span>One tap sends a job sheet and the photo. Quotes and visit times show on the job's timeline.</span></li>
+        </ol>
+
+        <div class="screens" aria-label="More app screens">
+          <figure class="phone phone-sm">
+            <div class="screen">
+              <div class="s-bar"><span>Sample rental</span></div>
+              <p class="s-title">Landlord safety checks (England)</p>
+              <div class="s-card"><div class="row"><b>Gas safety check</b><span class="pill pill-y">Due soon</span></div><span class="muted">Due in 15 days</span></div>
+              <div class="s-card"><div class="row"><b>Electrical report (EICR)</b><span class="pill pill-r">Overdue</span></div><span class="muted">Overdue by 20 days</span></div>
+              <div class="s-card"><div class="row"><b>Energy certificate</b><span class="pill pill-g">OK</span></div><span class="muted">OK until Nov 2033</span></div>
+              <div class="s-card"><div class="row"><b>Smoke and CO alarms</b><span class="pill">No date</span></div><span class="muted">Add the date of the last check</span></div>
+            </div>
+            <figcaption>Safety checks</figcaption>
+          </figure>
+          <figure class="phone phone-sm">
+            <div class="screen">
+              <div class="s-bar"><span>PC-1001</span></div>
+              <b class="s-h">Dripping kitchen tap</b>
+              <div class="s-card"><b class="s-big">£95</b><span class="muted">Quoted by PropCare (sample)</span></div>
+              <p class="s-title">Progress</p>
+              <ul class="timeline">
+                <li class="done">Requested<span>3 Nov, request created</span></li>
+                <li class="done now">Quote sent<span>4 Nov, quote £95</span></li>
+                <li>Booked</li><li>In progress</li><li>Done</li>
+              </ul>
+            </div>
+            <figcaption>Job timeline</figcaption>
+          </figure>
+          <figure class="phone phone-sm">
+            <div class="screen screen-red">
+              <b class="s-h">Emergency</b>
+              <p>If anyone is in danger, call 999.</p>
+              <div class="s-btn">Call the gas emergency line, 0800 111 999</div>
+              <div class="s-btn s-btn-line">Call PropCare, 07938 849865</div>
+              <b>You smell gas</b>
+              <ol><li>Do not use switches or flames.</li><li>Open doors and windows.</li><li>Turn off the gas at the meter.</li><li>Leave, then call 0800 111 999.</li></ol>
+            </div>
+            <figcaption>Emergency mode</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="safety" id="safety" aria-labelledby="safety-h">
+      <div class="wrap safety-grid">
+        <div>
+          <h2 id="safety-h">Your home's data stays on your phone</h2>
+          <p>There is no account and no cloud copy. Jobs, checks and photos live in the app until you send a job to PropCare yourself. Delete everything from the Account tab at any time.</p>
+        </div>
+        <ul class="ticks">
+          <li><b>No secret keys in the app.</b> The AI key lives only on the server.</li>
+          <li><b>Only three permissions:</b> internet, notifications and fingerprint unlock. The camera and microphone open through Android itself.</li>
+          <li><b>Optional app lock</b> with your fingerprint, face or screen lock.</li>
+          <li><b>Works offline.</b> Without a connection, an on-device check plus the same safety rules takes over.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="demo" id="demo" aria-labelledby="demo-h" hidden>
+      <div class="wrap">
+        <h2 id="demo-h">Watch the two-minute demo</h2>
+        <div class="video" id="video-slot"></div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-row">
+        <div>
+          <h2>Put your home's repairs and checks in one place</h2>
+          <p>Built with Kotlin and Jetpack Compose, Room, WorkManager and Glance on Android; Gemini 2.5 Flash-Lite through a Vercel function for the photo check.</p>
+        </div>
+        <a class="btn btn-main" href="downloads/PropCare-HomeOS.apk" data-apk>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          Download the Android app
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <p>Concept app built for Prop Care (NW) LTD by A Benjamin Gabrial. Not an official PropCare product. Prices shown are examples.</p>
+      <p>© 2026 A Benjamin Gabrial. All rights reserved. Archivo font by Omnibus-Type, SIL Open Font Licence.</p>
+    </div>
+  </footer>
+</body>
+</html>

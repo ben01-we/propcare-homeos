@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">PropCare</string>
+    <string name="widget_name">PropCare home status</string>
+    <string name="widget_description">Open jobs and your next safety check</string>
+</resources>

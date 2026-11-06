@@ -9,3 +9,27 @@ function request(){if(!queued){queued=true;requestAnimationFrame(update)}}
 addEventListener('scroll',request,{passive:true});addEventListener('resize',request);visual.addEventListener('pointermove',e=>{if(reduced||e.pointerType==='touch')return;const r=visual.getBoundingClientRect();pointer=((e.clientX-r.left)/r.width-.5)*2;request()});visual.addEventListener('pointerleave',()=>{pointer=0;request()});
 function applyMotion(){body.classList.toggle('reduced',reduced);$('#motion').setAttribute('aria-pressed',String(reduced));$('#motion').textContent=reduced?'Enable motion':'Reduce motion';if(reduced){for(const name of ['--turn','--roof-lift','--upper-lift','--lift','--phone-lift'])visual.style.removeProperty(name);for(const el of $$('.story-visual,.dial,.photo-panel'))el.removeAttribute('style')}request()}
 $('#motion').addEventListener('click',()=>{manual=true;reduced=!reduced;applyMotion()});media.addEventListener('change',e=>{if(!manual){reduced=e.matches;applyMotion()}});$$('[data-step]').forEach(b=>b.addEventListener('click',()=>{const n=+b.dataset.step;const y=story.getBoundingClientRect().top+scrollY+(story.offsetHeight-innerHeight)*((n+.15)/3);scrollTo({top:y,behavior:reduced?'instant':'smooth'})}));applyMotion();
+
+// Manual role tabs: predictable focus order, arrow keys, Home and End.
+const roleTabs=$$('.role-tabs [role="tab"]');
+function selectRole(tab,focus=false){
+ roleTabs.forEach(item=>{
+  const selected=item===tab;
+  item.setAttribute('aria-selected',String(selected));
+  item.tabIndex=selected?0:-1;
+  document.getElementById(item.getAttribute('aria-controls')).hidden=!selected;
+ });
+ if(focus)tab.focus();
+ request();
+}
+roleTabs.forEach((tab,index)=>{
+ tab.addEventListener('click',()=>selectRole(tab));
+ tab.addEventListener('keydown',event=>{
+  let next;
+  if(event.key==='ArrowRight')next=(index+1)%roleTabs.length;
+  if(event.key==='ArrowLeft')next=(index-1+roleTabs.length)%roleTabs.length;
+  if(event.key==='Home')next=0;
+  if(event.key==='End')next=roleTabs.length-1;
+  if(next!==undefined){event.preventDefault();selectRole(roleTabs[next],true)}
+ });
+});

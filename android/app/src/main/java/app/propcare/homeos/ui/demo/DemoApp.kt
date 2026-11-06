@@ -34,8 +34,10 @@ import app.propcare.homeos.ui.screens.*
 import app.propcare.homeos.util.Images
 import app.propcare.homeos.util.Share
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 @Composable fun DemoApp(vm: AppViewModel, snackbar: SnackbarHostState) {
@@ -142,7 +144,13 @@ import java.time.LocalDate
                         DemoNote("Switch to the Technician demo role on Home or You to complete a repair.")
                     } else DemoCompletionScreen(job, back, { days, note ->
                         if (!busy) { busy = true; error = null; scope.launch {
-                            try { vm.completeDemoJob(id, days, note); nav.navigate("warranty/$id") { popUpTo("complete/{id}") { inclusive = true } } }
+                            try {
+                                vm.completeDemoJob(id, days, note)
+                                // Room/widget work suspends; navigation must resume on Android's main dispatcher.
+                                withContext(Dispatchers.Main.immediate) {
+                                    nav.navigate("warranty/$id") { popUpTo("complete/{id}") { inclusive = true } }
+                                }
+                            }
                             catch (e: CancellationException) { throw e }
                             catch (e: Exception) { android.util.Log.e("PropCareCompletion", "Completion handoff failed", e); error = "Could not complete this repair. Try again." }
                             finally { busy = false }

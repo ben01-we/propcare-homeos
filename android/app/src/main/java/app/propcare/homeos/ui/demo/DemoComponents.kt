@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,7 +31,9 @@ import app.propcare.homeos.domain.Triage
 
 @Composable
 fun DemoPage(title: String, back: (() -> Unit)? = null, topLevel: Boolean = false,
-             brand: Boolean = false, footer: @Composable () -> Unit = {}, content: @Composable ColumnScope.() -> Unit) {
+             brand: Boolean = false, footer: @Composable () -> Unit = {}, resetKey: Any? = null, content: @Composable ColumnScope.() -> Unit) {
+    val scroll = rememberScrollState()
+    LaunchedEffect(resetKey) { scroll.scrollTo(0) }
     Scaffold(
         contentWindowInsets = if (topLevel) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets,
         topBar = {
@@ -46,7 +49,7 @@ fun DemoPage(title: String, back: (() -> Unit)? = null, topLevel: Boolean = fals
         bottomBar = footer,
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()
-            .verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+            .verticalScroll(scroll), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().padding(horizontal = 24.dp).padding(top = 12.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
         }

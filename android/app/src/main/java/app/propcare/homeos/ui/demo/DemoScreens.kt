@@ -92,6 +92,7 @@ fun JobEntity.coverage(): RepairCoverage? = if (statusEnum == JobStatus.done && 
                         FilledTonalIconButton(onClick = action, modifier = Modifier.size(52.dp)) { Icon(icon, title) }
                         Text(title, style = MaterialTheme.typography.labelMedium)
                     }
+                }
             }
         } else PrimaryAction("Report a repair", onReport)
         Text(if (role == DemoRole.technician) "Your jobs" else "Your repairs", style = MaterialTheme.typography.titleMedium)
@@ -135,7 +136,7 @@ data class DemoReportActions(
     DemoPage(when (state.step) {
         DemoStep.describe -> "Report a repair"; DemoStep.assessment -> "Your assessment"; DemoStep.matching -> "Finding help"
         DemoStep.technician -> "Suggested technician"; else -> "Repair brief"
-    }, back = if (state.step == DemoStep.describe) actions.close else actions.back,
+    }, back = if (state.step == DemoStep.describe) actions.close else actions.back, resetKey = state.step,
         footer = { ActionFooter(if (state.sample) "Sample AI assessment · not a live diagnosis" else "Photos are checked after capture. A technician confirms.") {
             PrimaryAction(label, nextAction, enabled = !state.loading && !state.checking && !state.saving &&
                 (state.step != DemoStep.describe || (properties.isNotEmpty() && (state.photo != null || state.description.isNotBlank()))))

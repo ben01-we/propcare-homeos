@@ -40,10 +40,6 @@ function update() {
   $('.story-visual').style.setProperty('--story-turn', (-18 + Math.sin(t * Math.PI * 2) * 17) + 'deg');
   $('.story-visual').style.setProperty('--story-lean', (-7 + t * 14) + 'deg');
   $('.story-visual').style.setProperty('--chip-lift', (-Math.sin(t * Math.PI) * 28) + 'px');
-  const protection = $('.protect');
-  const p = clamp((height - protection.getBoundingClientRect().top) / (height + protection.offsetHeight));
-  $('.dial').style.setProperty('--dial-turn', (-30 + p * 45) + 'deg');
-  $('.dial').style.setProperty('--dash', 240 - p * 230);
 }
 function request() { if (!queued) { queued = true; requestAnimationFrame(update); } }
 addEventListener('scroll', request, { passive: true });
@@ -61,7 +57,7 @@ function applyMotion() {
   $('#motion').textContent = reduced ? 'Enable motion' : 'Reduce motion';
   if (reduced) {
     for (const property of ['--turn', '--roof-lift', '--upper-lift', '--lift', '--phone-lift']) visual.style.removeProperty(property);
-    for (const element of $$('.story-visual,.dial')) element.removeAttribute('style');
+    for (const element of $$('.story-visual')) element.removeAttribute('style');
   }
   chapter = -1;
   request();
@@ -111,3 +107,46 @@ document.addEventListener('keydown', event => {
 });
 document.addEventListener('click', event => { if (!event.target.closest('header')) closeMenu(); });
 matchMedia('(min-width: 701px)').addEventListener('change', event => { if (event.matches) closeMenu(); });
+
+// Native scrolling provides touch/trackpad support; buttons and keys are alternatives.
+// Slide count comes from the markup so future gallery items need no JS changes.
+const gallery = $('#project-carousel');
+const slides = [...gallery.querySelectorAll('.project-card')];
+const previous = $('.gallery-prev'), next = $('.gallery-next'), count = $('.gallery-count');
+let galleryIndex = 0, galleryFrame = false;
+function slidePosition(index) {
+  const first = slides[0].getBoundingClientRect();
+  const current = slides[index].getBoundingClientRect();
+  return Math.min(current.left - first.left, gallery.scrollWidth - gallery.clientWidth);
+}
+function updateGallery() {
+  galleryFrame = false;
+  let distance = Infinity;
+  slides.forEach((slide, index) => {
+    const delta = Math.abs(slidePosition(index) - gallery.scrollLeft);
+    if (delta < distance) { distance = delta; galleryIndex = index; }
+  });
+  previous.disabled = gallery.scrollLeft < 2;
+  next.disabled = gallery.scrollLeft >= gallery.scrollWidth - gallery.clientWidth - 2;
+  const label = `${galleryIndex + 1} / ${slides.length}`;
+  if (count.textContent !== label) count.textContent = label;
+}
+function moveGallery(index) {
+  const target = Math.max(0, Math.min(slides.length - 1, index));
+  gallery.scrollTo({ left: slidePosition(target), behavior: reduced ? 'instant' : 'smooth' });
+}
+slides.forEach((slide, index) => {
+  slide.setAttribute('aria-label', `${index + 1} of ${slides.length}: ${slide.querySelector('h3').textContent}. View company gallery`);
+  slide.addEventListener('focus', () => moveGallery(index));
+});
+previous.addEventListener('click', () => moveGallery(galleryIndex - 1));
+next.addEventListener('click', () => moveGallery(galleryIndex + 1));
+gallery.addEventListener('keydown', event => {
+  const actions = { ArrowLeft: galleryIndex - 1, ArrowRight: galleryIndex + 1, Home: 0, End: slides.length - 1 };
+  if (event.key in actions) { event.preventDefault(); moveGallery(actions[event.key]); }
+});
+gallery.addEventListener('scroll', () => {
+  if (!galleryFrame) { galleryFrame = true; requestAnimationFrame(updateGallery); }
+}, { passive: true });
+new ResizeObserver(updateGallery).observe(gallery);
+updateGallery();

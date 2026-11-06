@@ -4,8 +4,13 @@
   "version": "1.0.0",
   "description": "PropCare HomeOS landing page and AI photo check API (Vercel).",
   "type": "module",
-  "engines": { "node": ">=22.6" },
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "test": "node --experimental-strip-types --no-warnings --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2"
   }
 }

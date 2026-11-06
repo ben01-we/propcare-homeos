@@ -1,3 +1,7 @@
 tests
 node_modules
 *.md
+.env
+.env.*
+.git
+.vercel

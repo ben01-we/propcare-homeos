@@ -25,7 +25,12 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xxhdpi", application = Application::class)
 class DemoFlowTest {
     @get:Rule val ui = createComposeRule()
-    private fun waitFor(text: String) { ui.waitUntil(25_000) { ui.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
+    private fun waitFor(text: String) {
+        try { ui.waitUntil(25_000) { ui.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
+        catch (failure: androidx.compose.ui.test.ComposeTimeoutException) {
+            throw AssertionError("Waiting for '$text'\n${ui.onRoot(useUnmergedTree = true).printToString()}", failure)
+        }
+    }
     private fun tap(text: String, scroll: Boolean = false) {
         waitFor(text)
         if (scroll) ui.onNodeWithText(text).performScrollTo()
@@ -56,6 +61,7 @@ class DemoFlowTest {
         tap("Technician")
         tap("A possible tap seal issue", scroll = true)
         tap("Complete repair", scroll = true)
+        waitFor("Repair finished?")
         tap("Mark completed")
         waitFor("Repair protection.")
         ui.onNodeWithText("90").assertExists()

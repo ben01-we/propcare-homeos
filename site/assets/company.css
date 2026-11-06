@@ -50,4 +50,10 @@ header{background:#fbfcfef2}.nav{max-width:1336px;padding:0 48px;height:88px;gap
 .gallery-navigation button{display:grid;place-items:center;width:48px;height:48px;border:1px solid #a9bed6;border-radius:50%;background:transparent;color:var(--brand);transition:background .2s}
 .gallery-navigation button:hover:not(:disabled){background:white}
 .gallery-navigation button:disabled{opacity:.35;cursor:default}
+.whatsapp-float{position:fixed;right:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:19;display:grid;place-items:center;width:58px;height:58px;background:white;color:var(--accent);border:1px solid #b8d2e8;border-radius:50%;box-shadow:0 5px 22px #0e2f781a;transition:color .2s,background .2s,border-color .2s}
+.whatsapp-float .whatsapp-icon{width:29px;height:29px}
+.btn.whatsapp-contact{background:white;color:var(--accent);border:1px solid #b8d2e8;gap:12px}
+.btn.whatsapp-contact .whatsapp-icon{width:23px;height:23px}
+.whatsapp-float:hover,.whatsapp-float:focus-visible,.btn.whatsapp-contact:hover,.btn.whatsapp-contact:focus-visible{color:var(--brand);border-color:var(--brand);background:#edf5ff}
+@media(max-width:700px){.whatsapp-float{right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:54px;height:54px}}
 @media(max-width:700px){.project-grid{gap:16px}.project-card{flex-basis:88%}.project-photo{aspect-ratio:1.05}.project-card h3{font-size:23px}.gallery-controls{gap:10px;margin-top:23px;padding-top:18px;align-items:center}.gallery-hint{font-size:11px;max-width:125px;line-height:1.6}.gallery-navigation{gap:8px}.gallery-count{min-width:35px;margin-right:2px}.gallery-navigation button{width:44px;height:44px}}

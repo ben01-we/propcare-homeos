@@ -111,6 +111,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteRoom(id: Long) = launchSafely("Could not delete the room") { repo.deleteRoom(id) }
     fun setCheckDate(propertyId: Long, kind: String, lastDone: LocalDate?) = launchSafely("Could not save the date") { repo.setCheckDate(propertyId, kind, lastDone) }
     fun seedSample() = launchSafely("Could not load the sample home") { repo.seedSample(); say("Sample home loaded") }
+    suspend fun createDemoJob(draft: JobDraft): Long = repo.createJob(draft)
+    suspend fun seedDemo() = repo.seedSample()
+    suspend fun completeDemoJob(id: Long, days: Int, note: String) {
+        require(days in 1..730)
+        repo.staffUpdate(id, StaffUpdate(status = JobStatus.done, message = note, warrantyDays = days))
+    }
 
     // Jobs
 
@@ -173,7 +179,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 error = (e as? TriageApi.TriageException)?.message ?: "No connection, so this is an offline check."
             }
         }
-        val labels = OfflineLabeler.labels(bitmap)
+        val labels = kotlinx.coroutines.withTimeoutOrNull(12_000) { OfflineLabeler.labels(bitmap) } ?: emptyList()
         return TriageResult(Safety.offlineTriage(description, labels), error)
     }
 

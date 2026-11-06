@@ -68,6 +68,10 @@ data class JobEntity(
     val sentAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
+    val technicianId: String? = null,
+    val completedAt: Long? = null,
+    val warrantyDays: Int? = null,
+    val parentJobId: Long? = null,
 )
 
 @Entity(
@@ -115,7 +119,7 @@ interface AppDao {
 
 @Database(
     entities = [ProfileEntity::class, PropertyEntity::class, RoomEntity::class, ComplianceEntity::class, JobEntity::class, JobEventEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDb : RoomDatabase() {
@@ -124,7 +128,16 @@ abstract class AppDb : RoomDatabase() {
     companion object {
         @Volatile private var instance: AppDb? = null
         fun get(context: Context): AppDb = instance ?: synchronized(this) {
-            instance ?: Room.databaseBuilder(context.applicationContext, AppDb::class.java, "propcare.db").build().also { instance = it }
+            instance ?: Room.databaseBuilder(context.applicationContext, AppDb::class.java, "propcare.db")
+                .addMigrations(MIGRATION_1_2).build().also { instance = it }
+        }
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE job ADD COLUMN technicianId TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE job ADD COLUMN completedAt INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE job ADD COLUMN warrantyDays INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE job ADD COLUMN parentJobId INTEGER DEFAULT NULL")
+            }
         }
     }
 }

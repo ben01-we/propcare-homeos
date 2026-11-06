@@ -133,10 +133,20 @@ fun PropCareRoot(vm: AppViewModel, locked: Boolean, onUnlock: () -> Unit) {
             locked -> LockScreen(onUnlock)
             !ready -> Surface(Modifier.fillMaxSize()) { LoadingState() }
             profile == null -> Box(Modifier.fillMaxSize()) {
-                Onboarding(vm)
+                var loading by remember { mutableStateOf(false) }
+                val scope = rememberCoroutineScope()
+                app.propcare.homeos.ui.demo.DemoWelcome(onSample = {
+                    if (!loading) {
+                        loading = true
+                        scope.launch {
+                            try { vm.seedDemo() } catch (_: Exception) { snackbar.showSnackbar("Could not load the demo. Try again.") }
+                            finally { loading = false }
+                        }
+                    }
+                }, busy = loading)
                 SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
             }
-            else -> MainNav(vm, snackbar)
+            else -> app.propcare.homeos.ui.demo.DemoApp(vm, snackbar)
         }
     }
 }

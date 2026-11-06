@@ -42,6 +42,8 @@ data class JobDraft(
     val accessNotes: String = "",
     val preferredTimes: String = "",
     val photoPath: String? = null,
+    val technicianId: String? = null,
+    val parentJobId: Long? = null,
 )
 
 /** Staff board edit. Null fields are left unchanged; [message] is shown to the customer on the timeline. */
@@ -51,6 +53,7 @@ data class StaffUpdate(
     val visitAt: Long? = null,
     val message: String = "",
     val staffNotes: String? = null,
+    val warrantyDays: Int? = null,
 )
 
 /** Codec for the triage stored on each job. */
@@ -135,6 +138,7 @@ class Repository(private val context: Context) {
                     triageJson = d.triage?.let { jsonCodec.encodeToString(Triage.serializer(), it) },
                     accessNotes = d.accessNotes.trim(), preferredTimes = d.preferredTimes.trim(), photoPath = d.photoPath,
                     createdAt = now, updatedAt = now,
+                    technicianId = d.technicianId, parentJobId = d.parentJobId,
                 ),
             )
             dao.insertEvent(JobEventEntity(jobId = jobId, status = JobStatus.requested.name, note = "Request created", createdAt = now))
@@ -183,6 +187,14 @@ class Repository(private val context: Context) {
             if (u.staffNotes != null) updated = updated.copy(staffNotes = u.staffNotes.trim())
             if (u.message.isNotBlank()) notes += u.message.trim()
             val newStatus = u.status ?: job.statusEnum
+            require(!(job.statusEnum == JobStatus.cancelled && newStatus == JobStatus.done)) { "A cancelled repair cannot be completed" }
+            // Snapshot once at the first completion; subsequent edits/reopening never reset coverage.
+            if (newStatus == JobStatus.done && job.completedAt == null) {
+                val period = u.warrantyDays ?: 90
+                require(period in 1..730) { "Choose a warranty period from 1 to 730 days" }
+                updated = updated.copy(completedAt = now, warrantyDays = period)
+                notes += "Completed. Example warranty: $period days"
+            }
             if (newStatus != job.statusEnum) {
                 updated = updated.copy(status = newStatus.name)
                 dao.insertEvent(JobEventEntity(jobId = jobId, status = newStatus.name, note = notes.joinToString(". ").ifBlank { newStatus.label }, createdAt = now))
@@ -224,6 +236,7 @@ class Repository(private val context: Context) {
         val now = System.currentTimeMillis()
         val day = 24L * 60 * 60 * 1000
         db.withTransaction {
+            if (dao.propertiesNow().any { it.name == "Sample rental" }) return@withTransaction
             if (dao.profileNow() == null) dao.saveProfile(ProfileEntity(fullName = "Sample customer", phone = "07700 900123", postcode = "M1 1AE"))
             val pid = dao.insertProperty(PropertyEntity(name = "Sample rental", addressLine = "14 Example Street", town = "Manchester", postcode = "M14 5AA", type = PropertyType.rental.name, createdAt = now))
             listOf("Kitchen", "Bathroom", "Living room", "Bedroom 1", "Bedroom 2").forEach { dao.insertRoom(RoomEntity(propertyId = pid, name = it)) }
@@ -255,6 +268,14 @@ class Repository(private val context: Context) {
                 ),
             )
             dao.insertEvent(JobEventEntity(jobId = mouldId, status = JobStatus.requested.name, note = "Request created", createdAt = mouldAt))
+            val completedId = dao.insertJob(JobEntity(
+                ref = dao.nextRef(), propertyId = pid, title = "Bathroom seal repaired", description = "Sample completed repair with example coverage.",
+                trade = Trade.plumber.name, urgency = Urgency.routine.name, status = JobStatus.done.name,
+                technicianId = "jamie", completedAt = now - 7 * day, warrantyDays = 90,
+                createdAt = now - 9 * day, updatedAt = now - 7 * day,
+            ))
+            dao.insertEvent(JobEventEntity(jobId = completedId, status = JobStatus.requested.name, note = "Sample repair requested", createdAt = now - 9 * day))
+            dao.insertEvent(JobEventEntity(jobId = completedId, status = JobStatus.done.name, note = "Sample repair completed. Example warranty: 90 days", createdAt = now - 7 * day))
         }
         changed()
     }

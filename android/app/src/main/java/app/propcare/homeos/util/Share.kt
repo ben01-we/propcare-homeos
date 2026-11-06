@@ -37,13 +37,15 @@ object Share {
         if (job.description.isNotBlank()) { appendLine(); appendLine("Description: ${job.description}") }
         job.triage()?.let { t ->
             appendLine()
-            appendLine(if (t.source == "ai") "AI first look (a technician confirms):" else "Offline check (a technician confirms):")
+            appendLine(when (t.source) { "ai" -> "AI first look (a technician confirms):"; "demo" -> "Sample assessment (demonstration only):"; else -> "Offline check (a technician confirms):" })
             appendLine("- ${t.issueSummary}")
             if (t.likelyCauses.isNotEmpty()) appendLine("- Likely causes: ${t.likelyCauses.joinToString("; ")}")
             if (t.safetyFlags.isNotEmpty()) appendLine("- Safety flags: ${t.safetyFlags.joinToString(", ") { it.replace('_', ' ') }}")
         }
         if (job.accessNotes.isNotBlank()) appendLine("Access: ${job.accessNotes}")
         if (job.preferredTimes.isNotBlank()) appendLine("Preferred times: ${job.preferredTimes}")
+        app.propcare.homeos.domain.DemoDirectory.find(job.technicianId)?.let { appendLine("Suggested expert: ${it.name} (demo profile, not assigned)") }
+        job.parentJobId?.let { appendLine("Follow-up linked to original local repair #$it") }
         if (profile != null) {
             appendLine()
             appendLine("Customer: ${profile.fullName}, ${profile.phone}, ${profile.postcode}")

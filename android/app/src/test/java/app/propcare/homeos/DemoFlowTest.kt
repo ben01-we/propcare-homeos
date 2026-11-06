@@ -28,7 +28,8 @@ class DemoFlowTest {
     private fun waitFor(text: String) {
         try { ui.waitUntil(25_000) { ui.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
         catch (failure: androidx.compose.ui.test.ComposeTimeoutException) {
-            throw AssertionError("Waiting for '$text'\n${ui.onRoot(useUnmergedTree = true).printToString()}", failure)
+            val errors = org.robolectric.shadows.ShadowLog.getLogsForTag("PropCareCompletion").joinToString("\n") { "${it.msg}: ${it.throwable?.stackTraceToString()}" }
+            throw AssertionError("Waiting for '$text'\n$errors\n${ui.onRoot(useUnmergedTree = true).printToString()}", failure)
         }
     }
     private fun tap(text: String, scroll: Boolean = false) {

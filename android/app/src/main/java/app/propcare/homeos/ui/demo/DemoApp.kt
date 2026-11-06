@@ -144,7 +144,7 @@ import java.time.LocalDate
                         if (!busy) { busy = true; error = null; scope.launch {
                             try { vm.completeDemoJob(id, days, note); nav.navigate("warranty/$id") { popUpTo("complete/{id}") { inclusive = true } } }
                             catch (e: CancellationException) { throw e }
-                            catch (_: Exception) { error = "Could not complete this repair. Try again." }
+                            catch (e: Exception) { android.util.Log.e("PropCareCompletion", "Completion handoff failed", e); error = "Could not complete this repair. Try again." }
                             finally { busy = false }
                         } }
                     }, busy, error)

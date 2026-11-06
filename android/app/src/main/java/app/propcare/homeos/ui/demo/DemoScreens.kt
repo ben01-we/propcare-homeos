@@ -7,6 +7,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +29,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.propcare.homeos.R
@@ -187,13 +191,28 @@ data class DemoReportActions(
                     }
                     DemoStep.matching -> {
                         DemoTitle("The right trade.\nThe next step.")
-                        Image(painterResource(R.drawable.brand_logo), "Prop Care logo", Modifier.size(128.dp).align(Alignment.CenterHorizontally))
                         DemoPanel { Text("${triage?.tradeEnum?.label ?: "General maintenance"} identified", style = MaterialTheme.typography.titleMedium) }
                         val people = DemoDirectory.matching(triage?.tradeEnum ?: Trade.general)
                         if (people.isEmpty()) DemoNote("No matching sample technician. Send the brief to PropCare to arrange the right trade.")
-                        people.forEach { tech ->
-                            FilterChip(selected = state.technicianId == tech.id, onClick = { actions.choose(tech.id) }, label = { Text("${tech.name} · ${tech.trade.label}") }, modifier = Modifier.heightIn(min = 56.dp).fillMaxWidth())
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            people.forEach { tech ->
+                                val selected = state.technicianId == tech.id
+                                Surface(shape = RoundedCornerShape(22.dp), color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+                                    modifier = Modifier.width(252.dp).selectable(selected = selected, role = Role.RadioButton, onClick = { actions.choose(tech.id) })) {
+                                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        if (tech.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Stock technician photo", Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+                                        else Box(Modifier.fillMaxWidth().height(160.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) { Text(tech.initials, style = MaterialTheme.typography.displayMedium) }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(tech.name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                                            Icon(if (selected) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked, if (selected) "Selected" else "Choose technician", tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Text(tech.trade.label, style = MaterialTheme.typography.bodyMedium)
+                                        DemoNote(tech.specialties)
+                                    }
+                                }
+                            }
                         }
+                        if (people.size > 1) DemoNote("Swipe to compare · tap to choose")
                         DemoNote("Illustrative directory. No availability, credentials or assignment confirmed.")
                     }
                     DemoStep.technician -> DemoDirectory.find(state.technicianId)?.let { TechnicianBody(it) }
@@ -218,7 +237,7 @@ data class DemoReportActions(
 }
 
 @Composable fun TechnicianBody(technician: DemoTechnician) {
-    if (technician.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Stock photo illustrating a technician", Modifier.fillMaxWidth().height(250.dp).clip(RoundedCornerShape(22.dp)), contentScale = ContentScale.Crop)
+    if (technician.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Stock photo illustrating a technician", Modifier.fillMaxWidth().height(250.dp).clip(RoundedCornerShape(22.dp)), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
     else Box(Modifier.fillMaxWidth().height(160.dp).background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) { Text(technician.initials, style = MaterialTheme.typography.displayMedium) }
     DemoTitle(technician.name, technician.trade.label)
     Text(technician.specialties, style = MaterialTheme.typography.bodyMedium)

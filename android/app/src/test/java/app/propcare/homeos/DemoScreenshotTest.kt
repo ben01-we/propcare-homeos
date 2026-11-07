@@ -27,7 +27,7 @@ class DemoScreenshotTest {
     private val property = PropertyEntity(1, "Sample rental", "14 Example Street", "Manchester", "M14 5AA", "rental")
     private val job = JobEntity(id = 1, ref = 1001, propertyId = 1, title = "Dripping kitchen tap", description = "The tap keeps dripping even when turned off.", trade = "plumber", urgency = "routine", technicianId = "jamie")
     private val done = job.copy(status = "done", completedAt = System.currentTimeMillis(), warrantyDays = 90)
-    private val triage = Triage(issueSummary = "A possible tap seal issue", trade = "plumber", source = "demo", box = listOf(220, 340, 850, 640), customerAdvice = listOf("Catch the drips. Avoid forcing the handle."))
+    private val triage = Triage(issueSummary = "A possible tap seal issue", trade = "plumber", source = "demo", box = listOf(220, 340, 850, 640), likelyCauses = listOf("A worn washer or seal", "A loose connection", "A damaged tap cartridge"), customerAdvice = listOf("Catch the drips. Avoid forcing the handle."))
     private fun photo() = BitmapFactory.decodeResource(RuntimeEnvironment.getApplication().resources, R.drawable.demo_tap).asImageBitmap()
     private fun state(step: DemoStep) = DemoReportState(step = step, description = job.description, photo = photo(), propertyId = 1, triage = triage, technicianId = "jamie", sample = true, title = job.title)
     private fun home() = summarise(listOf(property), listOf(
@@ -48,7 +48,14 @@ class DemoScreenshotTest {
     @Test fun homeLargeType() = shot("01-home-large-type", scale = 1.3f) { DemoHomeScreen("Benjamin", home(), listOf(job), DemoRole.resident, {}, {}, {}, {}, {}, {}, {}) }
     @Test fun report() = shot("02-report") { DemoReportScreen(state(DemoStep.describe), listOf(property), "en-GB", DemoReportActions()) }
     @Test fun assessment() = shot("03-assessment") { DemoReportScreen(state(DemoStep.assessment), listOf(property), "en-GB", DemoReportActions()) }
-    @Test fun matching() = shot("04-matching") { DemoReportScreen(state(DemoStep.matching), listOf(property), "en-GB", DemoReportActions()) }
+    @Test fun matching() = shot("04-matching") { DemoReportScreen(state(DemoStep.matching).copy(matchingComplete = true), listOf(property), "en-GB", DemoReportActions()) }
+    @Test fun register() = shot("00-register") { LocalLoginScreen(false) }
+    @Test fun login() = shot("00-login") { LocalLoginScreen(true) }
+    @Test fun loginDark() = shot("00-login-dark", true) { LocalLoginScreen(true) }
+    @Test fun registerLargeType() = shot("00-register-large-type", scale = 1.3f) { LocalLoginScreen(false) }
+    @Test fun processing() = shot("02-processing") { DemoPage("Checking your photo") { AnalysisProcessing(animate = false) } }
+    @Test fun assessmentLargeType() = shot("03-assessment-large-type", scale = 1.3f) { DemoReportScreen(state(DemoStep.assessment), listOf(property), "en-GB", DemoReportActions()) }
+    @Test fun matchingLargeType() = shot("04-matching-large-type", scale = 1.3f) { DemoReportScreen(state(DemoStep.matching).copy(matchingComplete = true), listOf(property), "en-GB", DemoReportActions()) }
     @Test fun technician() = shot("05-technician") { DemoReportScreen(state(DemoStep.technician), listOf(property), "en-GB", DemoReportActions()) }
     @Test fun brief() = shot("06-brief") { DemoReportScreen(state(DemoStep.brief), listOf(property), "en-GB", DemoReportActions()) }
     @Test fun completion() = shot("07-completion") { DemoCompletionScreen(job, {}, { _, _ -> }, false, null) }

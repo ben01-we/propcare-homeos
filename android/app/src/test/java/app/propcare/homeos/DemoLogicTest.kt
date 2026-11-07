@@ -28,7 +28,7 @@ class DemoLogicTest {
     @Test(expected = IllegalArgumentException::class) fun rejectsZeroDuration() { RepairCoverage(instant, 0) }
     @Test fun matchingDoesNotAssignWrongTrade() {
         assertTrue(DemoDirectory.matching(Trade.plumber).all { it.trade == Trade.plumber })
-        assertTrue(DemoDirectory.matching(Trade.plasterer).isEmpty())
+        assertTrue(DemoDirectory.matching(Trade.plasterer).all { it.trade == Trade.plasterer })
         assertEquals("jamie", DemoDirectory.matching(Trade.plumber).first().id)
     }
     @Test fun sampleCannotSuppressSafetyWarning() {

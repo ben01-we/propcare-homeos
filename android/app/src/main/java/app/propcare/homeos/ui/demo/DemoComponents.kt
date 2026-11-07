@@ -44,7 +44,7 @@ fun DemoPage(title: String, back: (() -> Unit)? = null, topLevel: Boolean = fals
                         Text("(NW) LTD", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 } else Text(title, style = MaterialTheme.typography.titleMedium)
             }, navigationIcon = { if (back != null) IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-                actions = { Text("DEMO", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 20.dp)) })
+                actions = {})
         },
         bottomBar = footer,
     ) { padding ->

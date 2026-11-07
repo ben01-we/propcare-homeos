@@ -127,23 +127,33 @@ fun PropCareRoot(vm: AppViewModel, locked: Boolean, onUnlock: () -> Unit) {
     PropCareTheme {
         val ready by vm.ready.collectAsStateWithLifecycle()
         val profile by vm.profile.collectAsStateWithLifecycle()
+        val signedIn by vm.signedIn.collectAsStateWithLifecycle()
         val snackbar = remember { SnackbarHostState() }
         LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
         when {
             locked -> LockScreen(onUnlock)
             !ready -> Surface(Modifier.fillMaxSize()) { LoadingState() }
-            profile == null -> Box(Modifier.fillMaxSize()) {
+            !signedIn || profile == null -> Box(Modifier.fillMaxSize()) {
                 var loading by remember { mutableStateOf(false) }
+                var error by remember { mutableStateOf<String?>(null) }
                 val scope = rememberCoroutineScope()
-                app.propcare.homeos.ui.demo.DemoWelcome(onSample = {
+                app.propcare.homeos.ui.demo.LocalLoginScreen(vm.hasLocalAccount, vm.localEmail, loading, error) { name, email, password ->
                     if (!loading) {
-                        loading = true
+                        loading = true; error = null
                         scope.launch {
-                            try { vm.seedDemo() } catch (_: Exception) { snackbar.showSnackbar("Could not load the demo. Try again.") }
+                            try {
+                                if (!vm.hasLocalAccount) vm.registerLocal(name, email, password)
+                                else when (val result = vm.signInLocal(email, password)) {
+                                    app.propcare.homeos.data.Settings.PinResult.Ok -> Unit
+                                    app.propcare.homeos.data.Settings.PinResult.Wrong -> error = "Email or password is incorrect. Try again."
+                                    is app.propcare.homeos.data.Settings.PinResult.Locked -> error = "Try again in ${result.seconds} seconds."
+                                }
+                            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                            catch (e: Exception) { error = e.message ?: "Could not sign in. Try again." }
                             finally { loading = false }
                         }
                     }
-                }, busy = loading)
+                }
                 SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
             }
             else -> app.propcare.homeos.ui.demo.DemoApp(vm, snackbar)

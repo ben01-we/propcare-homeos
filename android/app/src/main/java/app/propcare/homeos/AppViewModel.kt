@@ -77,6 +77,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasStaffPin: StateFlow<Boolean> = _hasStaffPin.asStateFlow()
     /** True when the build has an HTTPS API base, so the AI photo check can run online. */
     val onlineCheckConfigured: Boolean get() = TriageApi.configured
+    private val _signedIn = MutableStateFlow(settings.signedIn)
+    val signedIn = _signedIn.asStateFlow()
+    val hasLocalAccount get() = settings.hasLocalAccount
+    val localEmail get() = settings.localEmail
+    private val _role = MutableStateFlow(settings.selectedRole)
+    val selectedRole = _role.asStateFlow()
+    fun selectRole(value: String) { settings.selectedRole = value; _role.value = value }
+    suspend fun registerLocal(name: String, email: String, password: String) {
+        require(name.trim().length >= 2) { "Enter your name." }
+        require(android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) { "Enter a valid email address." }
+        require(password.length in 8..128) { "Use a password between 8 and 128 characters." }
+        check(!settings.hasLocalAccount) { "An account already exists. Sign in instead." }
+        repo.saveProfile(name.trim().take(80), "", "")
+        if (dao.propertiesNow().isEmpty()) repo.saveProperty(PropertyEntity(name = "My home", addressLine = "", town = "", postcode = "", type = "home"))
+        withContext(Dispatchers.IO) { settings.createLocalAccount(email, password) }
+        _signedIn.value = true
+    }
+    suspend fun signInLocal(email: String, password: String): Settings.PinResult {
+        val result = withContext(Dispatchers.IO) { settings.signIn(email, password) }
+        if (result == Settings.PinResult.Ok) _signedIn.value = true
+        return result
+    }
+    fun signOutLocal() { settings.signedIn = false; _signedIn.value = false; leaveStaffMode() }
 
     /** A property to open, set when the user taps a reminder notification. The UI clears it with [consumeOpenProperty]. */
     private val _openProperty = MutableStateFlow<Long?>(null)
@@ -205,6 +228,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteAllData(onDone: () -> Unit = {}) = launchSafely("Could not delete your data") {
         repo.deleteAll()
         _appLock.value = false; _staffMode.value = false; _hasStaffPin.value = false
+        _signedIn.value = false; _role.value = "resident"
+        getApplication<Application>().getSharedPreferences("propcare_draft", Context.MODE_PRIVATE).edit().clear().apply()
         say("All data deleted")
         onDone()
     }

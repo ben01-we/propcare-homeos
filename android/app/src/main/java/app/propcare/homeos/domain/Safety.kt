@@ -64,14 +64,37 @@ object Safety {
 
     /** Offline triage from the description plus on-device photo labels. Always labelled as offline. */
     fun offlineTriage(description: String, labels: List<String>): Triage {
-        val text = (description + " " + labels.joinToString(" ")).lowercase()
-        val r = rules.firstOrNull { it.test.containsMatchIn(text) }
+        val text = description.lowercase(java.util.Locale.ROOT)
+        // Specific descriptions beat broad photo labels (e.g. a room's floor must not
+        // override a reported boiler fault). Heating, roof and damp precede generic water.
+        val priority = listOf(Trade.gas_engineer, Trade.electrician, Trade.heating, Trade.damp,
+            Trade.roofer, Trade.plumber, Trade.plasterer, Trade.flooring, Trade.locksmith, Trade.decorator)
+        val ordered = rules.sortedBy { priority.indexOf(it.trade) }
+        val described = ordered.firstOrNull { it.test.containsMatchIn(text) }
+        val objects = labels.map { it.lowercase(java.util.Locale.ROOT).trim() }.toSet()
+        val photoTrade = when {
+            objects.any { it in setOf("tap", "faucet", "sink", "plumbing fixture", "toilet", "pipe") } -> Trade.plumber
+            objects.any { it in setOf("electrical wiring", "electrical connector", "socket", "light switch") } -> Trade.electrician
+            objects.any { it in setOf("radiator", "boiler", "water heater") } -> Trade.heating
+            objects.any { it in setOf("roof", "gutter", "roof tiles") } -> Trade.roofer
+            objects.any { it in setOf("mold", "mould", "damp") } -> Trade.damp
+            objects.any { it in setOf("flooring", "wood flooring", "tile", "laminate flooring") } -> Trade.flooring
+            objects.any { it in setOf("door", "window", "lock") } -> Trade.locksmith
+            else -> null
+        }
+        val r = described ?: rules.firstOrNull { it.trade == photoTrade }
         val base = if (r != null) Triage(
-            issueSummary = r.summary, likelyCauses = r.causes, trade = r.trade.name, urgency = r.urgency.name,
-            cannotTell = r.tell, customerAdvice = r.advice, confidence = "low", source = "offline", labels = labels,
+            issueSummary = if (described == null) "Possible ${r.trade.label.lowercase()} issue" else r.summary,
+            likelyCauses = r.causes, trade = r.trade.name,
+            urgency = if (described != null) r.urgency.name else Urgency.routine.name,
+            cannotTell = (if (described == null) listOf("A photo of an object does not prove it is faulty") else emptyList()) + r.tell,
+            customerAdvice = if (described == null) listOf("Add what is happening: leaking, loose, damaged or not working.") else r.advice,
+            confidence = "low", source = "offline", labels = labels,
         ) else Triage(
-            issueSummary = description.trim().take(120).ifBlank { "Issue reported" },
-            cannotTell = listOf("The cause, without a technician visit"), source = "offline", labels = labels,
+            issueSummary = "More detail will help identify this issue",
+            cannotTell = listOf("The image does not show a specific fault clearly enough"),
+            customerAdvice = listOf("Take a close-up in good light and describe what changed.", "Mention the room and whether it leaks, cracks or stops working."),
+            source = "offline", labels = labels,
         )
         return enforce(base, description)
     }

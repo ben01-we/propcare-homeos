@@ -52,7 +52,7 @@ import java.time.LocalDate
     val events by vm.events.collectAsStateWithLifecycle()
     val rooms by vm.rooms.collectAsStateWithLifecycle()
     val openProperty by vm.openProperty.collectAsStateWithLifecycle()
-    var roleName by rememberSaveable { mutableStateOf(DemoRole.resident.name) }
+    val roleName by vm.selectedRole.collectAsStateWithLifecycle()
     val role = DemoRole.valueOf(roleName)
     var today by remember { mutableStateOf(LocalDate.now()) }
     LaunchedEffect(Unit) { while (true) { today = LocalDate.now(); delay(60_000) } }
@@ -79,8 +79,8 @@ import java.time.LocalDate
             }
             NavHost(nav, startDestination = "home", modifier = Modifier.weight(1f)) {
                 composable("home") {
-                    DemoHomeScreen(profile?.fullName ?: "Benjamin", summaries, jobs, role,
-                        onRole = { roleName = it.name }, onReport = { report() }, onJob = { go("job/$it") },
+                    DemoHomeScreen(profile?.fullName ?: "You", summaries, jobs, role,
+                        onRole = { vm.selectRole(it.name) }, onReport = { report() }, onJob = { go("job/$it") },
                         onProperty = { go("property/$it") }, onEmergency = { go("emergency") },
                         onPassport = { vm.exportPassport(context, it) }, onJobs = { goTop("jobs") })
                 }
@@ -101,20 +101,22 @@ import java.time.LocalDate
                 composable("account") {
                     var confirmDelete by remember { mutableStateOf(false) }
                     DemoPage("You", topLevel = true) {
-                        DemoTitle("Your demo.", profile?.fullName)
-                        Text("Preview a role", style = MaterialTheme.typography.titleMedium)
+                        DemoTitle("Your account.", profile?.fullName)
+                        Text("Your view", style = MaterialTheme.typography.titleMedium)
                         DemoRole.entries.forEach { value ->
-                            FilterChip(selected = role == value, onClick = { roleName = value.name }, label = { Text(value.label) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp))
+                            FilterChip(selected = role == value, onClick = { vm.selectRole(value.name) }, label = { Text(value.label) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp))
                         }
-                        DemoNote("Role switching is a local demo feature, not authentication or real technician access.")
+                        DemoNote("Views are saved on this device. Technician profiles and matching are illustrative.")
+                        InfoRow(Icons.Filled.AccountCircle, "Signed in", vm.localEmail)
+                        TextButton(onClick = vm::signOutLocal) { Text("Sign out") }
                         InfoRow(Icons.Filled.PhotoCamera, "Photo analysis", if (vm.onlineCheckConfigured) "Online first, on-device fallback" else "Bundled on-device model · no API key required")
                         DemoNote("Live photo results use image labels plus your description. They do not invent a detection box. The sample photo has a labelled example assessment.")
                         DemoNote(Company.conceptLabel)
                         DemoNote("House: Binyamin Mellish / Pexels. Technician stock photo: Artem Podrez / Pexels. Sample tap: Zulfugar Karimov / Pexels. Inter font: SIL OFL.")
-                        TextButton(onClick = { confirmDelete = true }) { Text("Delete all demo data", color = MaterialTheme.colorScheme.error) }
+                        TextButton(onClick = { confirmDelete = true }) { Text("Delete all local data", color = MaterialTheme.colorScheme.error) }
                     }
                     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete all local data?") },
-                        text = { Text("This removes properties, repairs, photos and settings from this demo app.") },
+                        text = { Text("This removes properties, repairs, photos and settings from this device.") },
                         confirmButton = { TextButton(onClick = { confirmDelete = false; vm.deleteAllData() }) { Text("Delete data") } },
                         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep data") } })
                 }
@@ -141,7 +143,7 @@ import java.time.LocalDate
                     val job = jobs.firstOrNull { it.id == id }
                     var busy by remember { mutableStateOf(false) }; var error by remember { mutableStateOf<String?>(null) }
                     if (job == null) MissingRepair(back) else if (role != DemoRole.technician) DemoPage("Technician demo", back) {
-                        DemoNote("Switch to the Technician demo role on Home or You to complete a repair.")
+                        DemoNote("Switch to the Technician view on Home or You to complete a repair.")
                     } else DemoCompletionScreen(job, back, { days, note ->
                         if (!busy) { busy = true; error = null; scope.launch {
                             try {
@@ -214,7 +216,7 @@ import java.time.LocalDate
         voice = { try { voice.launch(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM).putExtra(RecognizerIntent.EXTRA_LANGUAGE, language).putExtra(RecognizerIntent.EXTRA_PROMPT, "Describe the repair")) }
             catch (_: Exception) { model.error("Speech input is unavailable. Type the description instead.") } },
         language = { language = it }, check = { model.check(vm) }, next = model::next, choose = model::choose,
-        access = model::access, title = model::title, save = { model.save(vm, onSaved) }, emergency = onEmergency,
+        matched = model::matched, access = model::access, title = model::title, save = { model.save(vm, onSaved) }, emergency = onEmergency,
     ))
     if (discard) AlertDialog(onDismissRequest = { discard = false }, title = { Text("Leave this report?") },
         text = { Text("Your draft stays available while this report is open. Save the repair brief to keep a job record.") },

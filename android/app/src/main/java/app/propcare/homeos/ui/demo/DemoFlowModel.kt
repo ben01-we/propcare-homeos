@@ -1,6 +1,7 @@
 package app.propcare.homeos.ui.demo
 
 import android.content.Context
+import android.app.Application
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.runtime.getValue
@@ -10,6 +11,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.propcare.homeos.AppViewModel
 import app.propcare.homeos.R
@@ -23,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 import java.io.File
 
 enum class DemoStep { describe, assessment, matching, technician, brief, saved }
@@ -32,19 +35,34 @@ data class DemoReportState(
     val technicianId: String? = null, val loading: Boolean = false, val checking: Boolean = false,
     val saving: Boolean = false, val error: String? = null, val onlineNote: String? = null,
     val sample: Boolean = false, val access: String = "", val title: String = "", val savedId: Long? = null,
+    val matchingComplete: Boolean = false,
 )
 
 /** Draft survives rotation/process recreation. Sample results are never used for real camera/gallery photos. */
-class DemoFlowModel(private val saved: SavedStateHandle) : ViewModel() {
-    var state by mutableStateOf(DemoReportState(
-        description = saved["description"] ?: "", propertyId = saved["property"], parentJobId = saved["parent"],
-        sample = saved["sample"] ?: false, access = saved["access"] ?: "",
+class DemoFlowModel(app: Application, private val saved: SavedStateHandle) : AndroidViewModel(app) {
+    private val drafts = ReportDraftStore(app)
+    private val restored = drafts.read()
+    private var photoPath: String? = restored?.photoPath ?: saved["photo"]
+    private var current by mutableStateOf(DemoReportState(
+        description = restored?.description ?: saved["description"] ?: "",
+        propertyId = restored?.propertyId ?: saved["property"], parentJobId = restored?.parentJobId ?: saved["parent"],
+        sample = restored?.sample ?: saved["sample"] ?: false, access = restored?.access ?: saved["access"] ?: "",
+        title = restored?.title.orEmpty(), triage = restored?.triage, technicianId = restored?.technicianId,
+        matchingComplete = restored?.matchingComplete ?: false,
+        step = if (restored?.triage != null) DemoStep.entries.firstOrNull { it.name == restored.step && it != DemoStep.saved } ?: DemoStep.describe else DemoStep.describe,
     ))
-        private set
-    private var photoPath: String? = saved["photo"]
+    var state: DemoReportState
+        get() = current
+        private set(value) {
+            current = value
+            if (value.savedId == null) drafts.write(StoredReport(value.description, photoPath, value.propertyId, value.parentJobId,
+                value.triage, value.technicianId, value.sample, value.access, value.title, value.step.name, value.matchingComplete))
+        }
     private var checkJob: Job? = null
+    private var photoJob: Job? = null
 
     fun start(property: Long?, parent: Long?, description: String = "") {
+        if (state.parentJobId != parent) { photoPath = null; state = DemoReportState() }
         state = state.copy(propertyId = state.propertyId ?: property, parentJobId = state.parentJobId ?: parent,
             description = state.description.ifBlank { description })
         saved["property"] = state.propertyId; saved["parent"] = state.parentJobId; saved["description"] = state.description
@@ -54,6 +72,7 @@ class DemoFlowModel(private val saved: SavedStateHandle) : ViewModel() {
     fun title(value: String) { state = state.copy(title = value.take(120)) }
     fun property(id: Long) { state = state.copy(propertyId = id); saved["property"] = id }
     fun choose(id: String) { if (DemoDirectory.matching(state.triage?.tradeEnum ?: return).any { it.id == id }) state = state.copy(technicianId = id) }
+    fun matched() { state = state.copy(matchingComplete = true) }
     fun next(step: DemoStep) { state = state.copy(step = step, error = null) }
     fun error(message: String) { state = state.copy(error = message, loading = false) }
     private fun cancelCheck() { checkJob?.cancel(); state = state.copy(checking = false) }
@@ -76,20 +95,21 @@ class DemoFlowModel(private val saved: SavedStateHandle) : ViewModel() {
         }
     }
     fun load(vm: AppViewModel, uri: Uri) {
-        cancelCheck(); state = state.copy(loading = true, error = null, sample = false, triage = null)
+        cancelCheck(); photoJob?.cancel(); state = state.copy(loading = true, error = null, sample = false, triage = null, step = DemoStep.describe, matchingComplete = false)
         saved["sample"] = false
-        viewModelScope.launch {
+        photoJob = viewModelScope.launch {
             try {
                 val bitmap = vm.loadPhoto(uri)
                 photoPath = vm.savePhoto(bitmap); saved["photo"] = photoPath
                 state = state.copy(photo = bitmap.asImageBitmap(), loading = false)
+                check(vm)
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { error("Could not open that photo. Try another one.") }
         }
     }
     fun sample(vm: AppViewModel, context: Context) {
-        cancelCheck(); state = state.copy(loading = true, error = null)
-        viewModelScope.launch {
+        cancelCheck(); photoJob?.cancel(); state = state.copy(loading = true, error = null)
+        photoJob = viewModelScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) { BitmapFactory.decodeResource(context.resources, R.drawable.demo_tap) }
                 photoPath = vm.savePhoto(bitmap); saved["photo"] = photoPath; saved["sample"] = true
@@ -104,20 +124,24 @@ class DemoFlowModel(private val saved: SavedStateHandle) : ViewModel() {
         if (state.propertyId == null) { error("Choose a property first."); return }
         if (state.photo == null && state.description.isBlank()) { error("Add a photo or describe the problem."); return }
         val snapshot = state
-        state = snapshot.copy(checking = true, error = null)
+        val checkedPhotoPath = photoPath
+        state = snapshot.copy(checking = true, error = null, matchingComplete = false)
         checkJob = viewModelScope.launch {
             try {
+                val started = android.os.SystemClock.elapsedRealtime()
                 val result = if (snapshot.sample) {
                     app.propcare.homeos.TriageResult(Safety.enforce(Triage(
                         issueSummary = "A possible tap seal issue", trade = "plumber", urgency = "routine", source = "demo",
-                        likelyCauses = listOf("Worn washer or internal seal"), confidence = "low",
+                        likelyCauses = listOf("A worn washer or seal", "A loose connection", "A damaged tap cartridge"), confidence = "low",
                         customerAdvice = listOf("Catch the drips. Avoid forcing the handle."),
                         cannotTell = listOf("The condition of the internal seal"), box = listOf(220, 340, 850, 640),
                     ), snapshot.description))
                 } else {
-                    val bitmap = photoPath?.let { withContext(Dispatchers.IO) { BitmapFactory.decodeFile(it) } }
+                    val bitmap = checkedPhotoPath?.let { withContext(Dispatchers.IO) { BitmapFactory.decodeFile(it) } }
                     vm.triage(bitmap, snapshot.description)
                 }
+                // A brief, bounded transition lets the captured photo hand off visibly to analysis.
+                delay((1600L - (android.os.SystemClock.elapsedRealtime() - started)).coerceAtLeast(0))
                 val t = Safety.enforce(result.triage, snapshot.description)
                 state = state.copy(checking = false, triage = t, title = t.issueSummary.take(120),
                     technicianId = DemoDirectory.matching(t.tradeEnum).firstOrNull()?.id,
@@ -138,7 +162,7 @@ class DemoFlowModel(private val saved: SavedStateHandle) : ViewModel() {
                     safe.tradeEnum, if (safe.urgencyEnum == Urgency.emergency) Urgency.emergency else safe.urgencyEnum,
                     triage = safe, accessNotes = state.access, photoPath = photoPath,
                     technicianId = state.technicianId, parentJobId = state.parentJobId))
-                state = state.copy(saving = false, savedId = id, step = DemoStep.saved); onSaved(id)
+                state = state.copy(saving = false, savedId = id, step = DemoStep.saved); drafts.clear(); onSaved(id)
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { state = state.copy(saving = false, error = "Could not save the repair. Your draft is still here; try again.") }
         }

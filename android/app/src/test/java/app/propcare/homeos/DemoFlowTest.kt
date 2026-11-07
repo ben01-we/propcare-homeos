@@ -45,12 +45,13 @@ class DemoFlowTest {
         ui.setContent { PropCareTheme { DemoApp(vm, remember { SnackbarHostState() }) } }
         waitFor("Your home.")
         tap("Report a repair", scroll = true)
-        tap("Try the sample tap photo", scroll = true)
+        tap("Use an example photo", scroll = true)
         waitFor("Sample photo and assessment. Take or choose a photo for real on-device analysis.")
         ui.waitUntil(25_000) { ui.onAllNodesWithText("Check this issue").fetchSemanticsNodes().any { it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Text) } }
         tap("Check this issue")
         waitFor("A possible tap seal issue")
-        tap("Find suitable help")
+        ui.onNodeWithText("A worn washer or seal").assertExists()
+        tap("Identify the right technician")
         tap("View technician")
         waitFor("Jamie Taylor")
         tap("Prepare repair brief")
@@ -65,6 +66,7 @@ class DemoFlowTest {
         waitFor("Repair finished?")
         tap("Mark completed")
         waitFor("Repair protection.")
+        ui.onNodeWithText("WARRANTY ISSUED").assertExists()
         ui.onNodeWithText("90").assertExists()
         tap("Report a problem again")
         waitFor("Show us the issue.")

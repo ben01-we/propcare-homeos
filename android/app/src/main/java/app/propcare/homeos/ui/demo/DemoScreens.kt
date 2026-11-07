@@ -102,10 +102,11 @@ fun JobEntity.coverage(): RepairCoverage? = if (statusEnum == JobStatus.done && 
         Text(if (role == DemoRole.technician) "Your jobs" else "Your repairs", style = MaterialTheme.typography.titleMedium)
         jobs.take(3).forEach { job ->
             InfoRow(Icons.Filled.Handyman, job.title, "${job.refLabel} · ${job.statusEnum.label}", { onJob(job.id) })
+            if (job.coverage() != null) WarrantyCountdown(job)
         }
         if (jobs.isEmpty()) DemoNote("No repairs yet. Report an issue to get started.")
         OutlinedButton(onClick = onEmergency, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Icon(Icons.Filled.Warning, null); Spacer(Modifier.width(8.dp)); Text("Emergency help") }
-        DemoNote("Demonstration data · technician profiles are examples.")
+        DemoNote("Your details stay on this device. Technician profiles are illustrative.")
     }
 }
 
@@ -113,7 +114,7 @@ data class DemoReportActions(
     val back: () -> Unit = {}, val close: () -> Unit = {}, val camera: () -> Unit = {}, val gallery: () -> Unit = {}, val sample: () -> Unit = {},
     val description: (String) -> Unit = {}, val property: (Long) -> Unit = {}, val voice: () -> Unit = {},
     val language: (String) -> Unit = {}, val check: () -> Unit = {}, val next: (DemoStep) -> Unit = {}, val choose: (String) -> Unit = {},
-    val access: (String) -> Unit = {}, val title: (String) -> Unit = {}, val save: () -> Unit = {}, val emergency: () -> Unit = {},
+    val matched: () -> Unit = {}, val access: (String) -> Unit = {}, val title: (String) -> Unit = {}, val save: () -> Unit = {}, val emergency: () -> Unit = {},
 )
 
 @Composable fun DemoReportScreen(state: DemoReportState, properties: List<PropertyEntity>, language: String, actions: DemoReportActions) {
@@ -121,8 +122,8 @@ data class DemoReportActions(
     val emergency = triage?.urgencyEnum == Urgency.emergency
     val label = when (state.step) {
         DemoStep.describe -> if (state.checking) "Checking your report…" else "Check this issue"
-        DemoStep.assessment -> if (emergency) "Open emergency help" else "Find suitable help"
-        DemoStep.matching -> if (state.technicianId != null) "View technician" else "Continue to repair brief"
+        DemoStep.assessment -> if (emergency) "Open emergency help" else "Identify the right technician"
+        DemoStep.matching -> if (!state.matchingComplete) "Matching technicians…" else if (state.technicianId != null) "View technician" else "Continue to repair brief"
         DemoStep.technician -> "Prepare repair brief"
         DemoStep.brief -> if (state.saving) "Saving repair…" else "Save repair brief"
         DemoStep.saved -> "Repair saved"
@@ -140,19 +141,19 @@ data class DemoReportActions(
     DemoPage(when (state.step) {
         DemoStep.describe -> "Report a repair"; DemoStep.assessment -> "Your assessment"; DemoStep.matching -> "Finding help"
         DemoStep.technician -> "Suggested technician"; else -> "Repair brief"
-    }, back = if (state.step == DemoStep.describe) actions.close else actions.back, resetKey = state.step,
+    }, back = if (state.step == DemoStep.describe) actions.close else actions.back, resetKey = state.step to state.checking,
         footer = { ActionFooter(if (state.sample) "Sample AI assessment · not a live diagnosis" else "Photos are checked after capture. A technician confirms.") {
-            PrimaryAction(label, nextAction, enabled = !state.loading && !state.checking && !state.saving &&
+            PrimaryAction(label, nextAction, enabled = !state.loading && !state.checking && !state.saving && (state.step != DemoStep.matching || state.matchingComplete) &&
                 (state.step != DemoStep.describe || (properties.isNotEmpty() && (state.photo != null || state.description.isNotBlank()))))
         } }) {
         ErrorLine(state.error)
-        if (state.loading || state.checking) LinearProgressIndicator(Modifier.fillMaxWidth())
-        AnimatedContent(targetState = state.step, label = "Report step") { step ->
+        if (state.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (state.checking) AnalysisProcessing() else AnimatedContent(targetState = state.step, label = "Report step") { step ->
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 when (step) {
                     DemoStep.describe -> {
                         DemoTitle("Show us the issue.")
-                        if (properties.isEmpty()) DemoNote("Load the sample home from Home before reporting a repair.")
+                        if (properties.isEmpty()) DemoNote("Add a property from the Properties tab before reporting a repair.")
                         if (properties.size == 1) DemoNote(properties.first().name) else FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             properties.forEach { p -> FilterChip(selected = state.propertyId == p.id, onClick = { actions.property(p.id) }, label = { Text(p.name) }, modifier = Modifier.heightIn(min = 48.dp)) }
                         }
@@ -169,52 +170,42 @@ data class DemoReportActions(
                             }
                         }
                         FilledTonalButton(onClick = actions.voice) { Icon(Icons.Filled.Mic, null); Spacer(Modifier.width(8.dp)); Text("Speak instead") }
-                        TextButton(onClick = actions.sample, enabled = !state.loading) { Text("Try the sample tap photo") }
+                        TextButton(onClick = actions.sample, enabled = !state.loading) { Text("Use an example photo") }
                         if (state.sample) DemoNote("Sample photo and assessment. Take or choose a photo for real on-device analysis.")
-                        else DemoNote("No server needed: on-device labels and your description guide the offline check.")
+                        else DemoNote("Take or choose a photo. Your report is saved on this device.")
                     }
                     DemoStep.assessment -> if (triage != null) {
-                        DemoTitle("A clearer next step.")
-                        Text("${triage.tradeEnum.label} · ${triage.urgencyEnum.label}", style = MaterialTheme.typography.titleSmall,
-                            color = if (emergency) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-                        DemoPhoto(state.photo, triage)
-                        Text(triage.issueSummary, style = MaterialTheme.typography.titleLarge)
-                        DemoNote(when (triage.source) { "ai" -> "AI first look · a technician confirms"; "demo" -> "Sample assessment and example highlight"; else -> "On-device/offline check · not a diagnosis" })
-                        if (!triage.isPropertyIssue) DemoNote("This may not show a property issue. Retake the photo or add more detail.")
-                        if (emergency) DemoPanel { Text("Safety first", color = MaterialTheme.colorScheme.error); triage.customerAdvice.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) } }
-                        else triage.customerAdvice.firstOrNull()?.let { DemoPanel { Text("For now", style = MaterialTheme.typography.titleSmall); Text(it) } }
-                        var expanded by rememberSaveable { mutableStateOf(false) }
-                        TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Hide assessment details" else "See assessment details") }
-                        if (expanded) { (triage.likelyCauses + triage.cannotTell).forEach { DemoNote(it) }; if (triage.labels.isNotEmpty()) DemoNote("Image labels: ${triage.labels.joinToString()}") }
-                        state.onlineNote?.let { DemoNote("Online check unavailable; offline check used.") }
-                        if (emergency) TextButton(onClick = { actions.next(DemoStep.brief) }) { Text("Save emergency report") }
-                    }
-                    DemoStep.matching -> {
-                        DemoTitle("The right trade.\nThe next step.")
-                        DemoPanel { Text("${triage?.tradeEnum?.label ?: "General maintenance"} identified", style = MaterialTheme.typography.titleMedium) }
-                        val people = DemoDirectory.matching(triage?.tradeEnum ?: Trade.general)
-                        if (people.isEmpty()) DemoNote("No matching sample technician. Send the brief to PropCare to arrange the right trade.")
-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            people.forEach { tech ->
-                                val selected = state.technicianId == tech.id
-                                Surface(shape = RoundedCornerShape(22.dp), color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
-                                    modifier = Modifier.width(252.dp).selectable(selected = selected, role = Role.RadioButton, onClick = { actions.choose(tech.id) })) {
-                                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        if (tech.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Stock technician photo", Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
-                                        else Box(Modifier.fillMaxWidth().height(160.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) { Text(tech.initials, style = MaterialTheme.typography.displayMedium) }
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(tech.name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                                            Icon(if (selected) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked, if (selected) "Selected" else "Choose technician", tint = MaterialTheme.colorScheme.primary)
-                                        }
-                                        Text(tech.trade.label, style = MaterialTheme.typography.bodyMedium)
-                                        DemoNote(tech.specialties)
-                                    }
+                        DemoTitle("Here’s what it could be.")
+                        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(triage.issueSummary, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                Text("${triage.tradeEnum.label} · ${triage.urgencyEnum.label}", style = MaterialTheme.typography.titleMedium,
+                                    color = if (emergency) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        Text("Possible causes", style = MaterialTheme.typography.titleLarge)
+                        if (triage.likelyCauses.isEmpty()) {
+                            Text("The photo alone does not show a clear cause. Add what is happening so we can narrow it down.", style = MaterialTheme.typography.bodyLarge)
+                            OutlinedButton(onClick = actions.back) { Text("Add more detail") }
+                        } else triage.likelyCauses.forEachIndexed { index, cause ->
+                            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                                Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                    Text("0${index + 1}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text(cause, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                                 }
                             }
                         }
-                        if (people.size > 1) DemoNote("Swipe to compare · tap to choose")
-                        DemoNote("Illustrative directory. No availability, credentials or assignment confirmed.")
+                        DemoNote(when (triage.source) { "ai" -> "Photo analysis · possibilities, not a confirmed diagnosis"; "demo" -> "Example photo and assessment"; else -> "On-device first look · a technician confirms the cause" })
+                        if (emergency) DemoPanel { Text("Safety first", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.titleLarge); triage.customerAdvice.forEach { Text(it, style = MaterialTheme.typography.bodyLarge) } }
+                        else triage.customerAdvice.firstOrNull()?.let { DemoPanel { Text("Your next step", style = MaterialTheme.typography.titleMedium); Text(it, style = MaterialTheme.typography.bodyLarge) } }
+                        state.photo?.let { Image(it, "Reported issue photo", Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(18.dp)), contentScale = ContentScale.Crop) }
+                        if (triage.labels.isNotEmpty()) DemoNote("Visible clues: ${triage.labels.joinToString()}")
+                        triage.cannotTell.firstOrNull()?.let { DemoNote("Still to confirm: $it") }
+                        if (state.onlineNote != null) DemoNote("On-device analysis used because the online check is unavailable.")
+                        if (emergency) TextButton(onClick = { actions.next(DemoStep.brief) }) { Text("Save emergency report") }
                     }
+                    DemoStep.matching -> MatchingCarousel(triage?.tradeEnum ?: Trade.general, state.technicianId,
+                        state.matchingComplete, actions.choose, actions.matched)
                     DemoStep.technician -> DemoDirectory.find(state.technicianId)?.let { TechnicianBody(it) }
                     DemoStep.brief, DemoStep.saved -> {
                         DemoTitle("Ready to send.")
@@ -237,9 +228,10 @@ data class DemoReportActions(
 }
 
 @Composable fun TechnicianBody(technician: DemoTechnician) {
-    if (technician.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Stock photo illustrating a technician", Modifier.fillMaxWidth().height(250.dp).clip(RoundedCornerShape(22.dp)), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+    if (technician.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Stock photo illustrating a technician", Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(22.dp)), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
     else Box(Modifier.fillMaxWidth().height(160.dp).background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) { Text(technician.initials, style = MaterialTheme.typography.displayMedium) }
     DemoTitle(technician.name, technician.trade.label)
+    TechnicianMetrics(technician)
     Text(technician.specialties, style = MaterialTheme.typography.bodyMedium)
     InfoRow(Icons.Filled.VerifiedUser, "Matches this trade", "Example profile, not verified or assigned")
     InfoRow(Icons.Filled.Event, "Arrange a visit", "PropCare confirms availability")
@@ -256,7 +248,7 @@ data class DemoReportActions(
                 (job.coverage()?.let { " · ${it.remaining()} warranty days left" } ?: ""), { onJob(job.id) })
         }
         if (jobs.isEmpty()) DemoNote("No repairs yet. Start with a photo or a few words.")
-        if (role == DemoRole.technician) DemoNote("Demo job board. Changes are stored locally on this device.")
+        if (role == DemoRole.technician) DemoNote("Changes are stored locally on this device.")
     }
 }
 
@@ -264,7 +256,10 @@ data class DemoReportActions(
     onBack: () -> Unit, onShare: (Boolean) -> Unit, onComplete: () -> Unit, onWarranty: () -> Unit, onStatus: (JobStatus) -> Unit, onFollowup: () -> Unit) {
     DemoPage("Your repair", back = onBack, footer = { ActionFooter { PrimaryAction("Send via WhatsApp", { onShare(true) }, icon = Icons.Filled.Share) } }) {
         DemoTitle(job.title, "${job.refLabel} · ${property?.name.orEmpty()}")
-        Text(job.statusEnum.label, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(job.statusEnum.label, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
+            if (job.coverage() != null) WarrantyCountdown(job)
+        }
         val photo = rememberPhoto(job.photoPath)
         DemoPhoto(photo, job.triage())
         DemoPanel {
@@ -277,7 +272,7 @@ data class DemoReportActions(
         job.coverage()?.let { coverage -> InfoRow(Icons.Filled.VerifiedUser, if (coverage.active()) "Warranty active" else "Warranty ended", "${coverage.remaining()} days remaining · Example period", onWarranty) }
         OutlinedButton(onClick = { onShare(false) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Send by email") }
         if (role == DemoRole.technician) {
-            Text("Demo staff controls", style = MaterialTheme.typography.titleMedium)
+            Text("Repair progress", style = MaterialTheme.typography.titleMedium)
             if (job.statusEnum != JobStatus.done && job.statusEnum != JobStatus.cancelled) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(JobStatus.quoted, JobStatus.booked, JobStatus.in_progress).forEach { status ->
@@ -286,7 +281,7 @@ data class DemoReportActions(
                 }
                 PrimaryAction("Complete repair", onComplete, icon = Icons.Filled.Check)
             }
-        } else if (job.statusEnum.isOpen) DemoNote("Use the Technician demo role to update the job and demonstrate completion.")
+        } else if (job.statusEnum.isOpen) DemoNote("Switch to the Technician view to update progress and complete this repair.")
         if (job.statusEnum == JobStatus.done) TextButton(onClick = onFollowup) { Text("Report a problem again") }
         DemoNote("Sharing opens another app; it does not confirm delivery or a booking.")
     }
@@ -324,6 +319,8 @@ data class DemoReportActions(
         InfoRow(Icons.Filled.VerifiedUser, status, job.refLabel)
         DemoTitle("Repair protection.")
         if (coverage != null) {
+            WarrantyStamp(job.id)
+            WarrantyCountdown(job)
             val remaining = coverage.remaining(today)
             val target = remaining.toFloat() / coverage.days
             val progress by animateFloatAsState(target, label = "Warranty coverage")

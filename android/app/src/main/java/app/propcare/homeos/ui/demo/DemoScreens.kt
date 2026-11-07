@@ -48,17 +48,6 @@ enum class DemoRole(val label: String) { resident("Resident"), landlord("Landlor
 val demoDate: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.UK)
 fun JobEntity.coverage(): RepairCoverage? = if (statusEnum == JobStatus.done && completedAt != null && warrantyDays != null && warrantyDays in 1..730) RepairCoverage(completedAt, warrantyDays) else null
 
-@Composable fun DemoWelcome(onSample: () -> Unit, busy: Boolean) {
-    DemoPage("Welcome", brand = true) {
-        Spacer(Modifier.height(16.dp))
-        DemoTitle("Home. Handled.", "Report a repair. Follow the work. Know what’s covered.")
-        Image(painterResource(R.drawable.demo_house), "Illustrative sample house", Modifier.fillMaxWidth().height(240.dp).clip(RoundedCornerShape(24.dp)), contentScale = ContentScale.Crop)
-        PrimaryAction(if (busy) "Loading sample home…" else "Explore the demo", onSample, enabled = !busy)
-        DemoNote("Loads a clearly labelled sample home. No account, server or API key needed.")
-        DemoNote(Company.conceptLabel)
-    }
-}
-
 @Composable fun DemoHomeScreen(name: String, summaries: List<PropertySummary>, jobs: List<JobEntity>, role: DemoRole,
     onRole: (DemoRole) -> Unit, onReport: () -> Unit, onJob: (Long) -> Unit, onProperty: (Long) -> Unit,
     onEmergency: () -> Unit, onPassport: (Long) -> Unit, onJobs: () -> Unit) {

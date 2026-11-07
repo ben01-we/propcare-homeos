@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class LocalStateTest {
-    private val app get() = RuntimeEnvironment.getApplication<Application>()
+    private val app get() = RuntimeEnvironment.getApplication()
     @Before fun clean() { Settings(app).clearAll(); ReportDraftStore(app).clear() }
 
     @Test fun accountSessionAndRolePersistWithoutPlaintextPassword() {

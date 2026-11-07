@@ -24,7 +24,7 @@ class LocalLoginFlowTest {
     @get:Rule val ui = createComposeRule()
     private fun waitFor(text: String) = ui.waitUntil(25_000) { ui.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     @Test fun createSignOutAndSignInKeepTheSameHome() {
-        val app = RuntimeEnvironment.getApplication<Application>()
+        val app = RuntimeEnvironment.getApplication()
         val repo = Repository(app)
         runBlocking(Dispatchers.IO) { repo.db.clearAllTables() }
         Settings(app).clearAll()

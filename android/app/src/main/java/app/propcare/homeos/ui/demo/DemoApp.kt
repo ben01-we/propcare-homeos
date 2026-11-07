@@ -219,7 +219,7 @@ import java.time.LocalDate
         matched = model::matched, access = model::access, title = model::title, save = { model.save(vm, onSaved) }, emergency = onEmergency,
     ))
     if (discard) AlertDialog(onDismissRequest = { discard = false }, title = { Text("Leave this report?") },
-        text = { Text("Your draft stays available while this report is open. Save the repair brief to keep a job record.") },
+        text = { Text("Your draft is saved on this device. Return to Report a repair to continue.") },
         confirmButton = { TextButton(onClick = { discard = false; model.back(); onClose() }) { Text("Leave report") } },
         dismissButton = { TextButton(onClick = { discard = false }) { Text("Keep editing") } })
 }

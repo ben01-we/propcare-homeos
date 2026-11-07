@@ -217,7 +217,7 @@ data class DemoReportActions(
 }
 
 @Composable fun TechnicianBody(technician: DemoTechnician) {
-    if (technician.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Stock photo illustrating a technician", Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(22.dp)), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+    if (technician.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Stock photo illustrating a technician", Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(22.dp)), contentScale = ContentScale.Crop, alignment = Alignment.Center)
     else Box(Modifier.fillMaxWidth().height(160.dp).background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) { Text(technician.initials, style = MaterialTheme.typography.displayMedium) }
     DemoTitle(technician.name, technician.trade.label)
     TechnicianMetrics(technician)

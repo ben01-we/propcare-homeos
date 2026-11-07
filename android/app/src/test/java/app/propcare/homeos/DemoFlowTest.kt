@@ -49,9 +49,13 @@ class DemoFlowTest {
         waitFor("Sample photo and assessment. Take or choose a photo for real on-device analysis.")
         ui.waitUntil(25_000) { ui.onAllNodesWithText("Check this issue").fetchSemanticsNodes().any { it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Text) } }
         tap("Check this issue")
+        // ViewModel delays use Android's Handler clock, separate from Compose's frame clock.
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(2))
         waitFor("A possible tap seal issue")
         ui.onNodeWithText("A worn washer or seal").assertExists()
         tap("Identify the right technician")
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1))
+        ui.mainClock.advanceTimeBy(4000)
         tap("View technician")
         waitFor("Jamie Taylor")
         tap("Prepare repair brief")

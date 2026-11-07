@@ -17,8 +17,8 @@ android {
         applicationId = "app.propcare.homeos.demo"
         minSdk = 30
         targetSdk = 35
-        versionCode = 12
-        versionName = "1.2.0-demo"
+        versionCode = 13
+        versionName = "1.2.1-demo"
         buildConfigField("String", "API_BASE", "\"$apiBase\"")
         // A public client id, used by the API only for rate limiting. Not a secret.
         buildConfigField("String", "CLIENT_ID", "\"propcare-android-1\"")

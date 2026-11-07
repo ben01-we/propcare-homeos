@@ -119,7 +119,7 @@ import java.time.ZoneId
             modifier = Modifier.fillMaxWidth().graphicsLayer { scaleX = scale; scaleY = scale }) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 if (technician.id == "jamie") Image(painterResource(R.drawable.demo_technician), "Illustrative technician photo",
-                    Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.Crop, alignment = Alignment.Center)
+                    Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.Crop, alignment = androidx.compose.ui.BiasAlignment(0f, -.55f))
                 else Box(Modifier.fillMaxWidth().height(140.dp).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
                     Text(technician.initials, style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.primary)
                 }

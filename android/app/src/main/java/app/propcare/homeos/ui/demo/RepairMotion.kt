@@ -46,10 +46,12 @@ import java.time.ZoneId
 }
 
 @Composable fun AnalysisProcessing(animate: Boolean = motionAllowed()) {
-    val transition = rememberInfiniteTransition(label = "Analysis glow")
-    val pulse by transition.animateFloat(.72f, 1f,
-        infiniteRepeatable(tween(1100), RepeatMode.Reverse), label = "Blue glow")
-    val strength = if (animate) pulse else .85f
+    val strength = if (animate) {
+        val transition = rememberInfiniteTransition(label = "Analysis glow")
+        val pulse by transition.animateFloat(.72f, 1f,
+            infiniteRepeatable(tween(1100), RepeatMode.Reverse), label = "Blue glow")
+        pulse
+    } else .85f
     val blue = PropCareTheme.status.highlight
     Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -63,7 +65,8 @@ import java.time.ZoneId
         }
         Text("Taking a closer look.", style = MaterialTheme.typography.headlineMedium)
         Text("Checking the photo and your description", style = MaterialTheme.typography.bodyMedium)
-        LinearProgressIndicator(Modifier.width(190.dp))
+        if (animate) LinearProgressIndicator(Modifier.width(190.dp))
+        else LinearProgressIndicator(progress = { .55f }, modifier = Modifier.width(190.dp))
         DemoNote("Looking for useful clues, then the right trade.")
     }
 }
